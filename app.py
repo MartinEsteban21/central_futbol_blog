@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import secrets
 from werkzeug.utils import secure_filename
+from sqlalchemy import or_ # Importar para usar OR en las consultas de búsqueda
 
 app = Flask(__name__)
 
@@ -108,9 +109,7 @@ class Comment(db.Model):
 
 @app.route('/')
 def index():
-    # Obtener el número de página de la URL (por defecto es 1)
     page = request.args.get('page', 1, type=int)
-    # Realizar la consulta con paginación
     posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=POSTS_PER_PAGE, error_out=False)
     categories = Category.query.order_by(Category.name).all()
     return render_template('index.html', posts=posts, categories=categories)
@@ -118,12 +117,33 @@ def index():
 @app.route('/category/<int:category_id>')
 def category_posts(category_id):
     category = Category.query.get_or_404(category_id)
-    # Obtener el número de página de la URL (por defecto es 1)
     page = request.args.get('page', 1, type=int)
-    # Realizar la consulta con paginación para la categoría específica
     posts = Post.query.filter_by(category=category).order_by(Post.date_posted.desc()).paginate(page=page, per_page=POSTS_PER_PAGE, error_out=False)
     categories = Category.query.order_by(Category.name).all()
     return render_template('category_posts.html', category=category, posts=posts, categories=categories)
+
+# RUTA DE BÚSQUEDA (NUEVA)
+@app.route('/search')
+def search():
+    query = request.args.get('query', '') # Obtener la consulta de búsqueda de la URL
+    page = request.args.get('page', 1, type=int)
+    
+    if query:
+        # Realizar la búsqueda en el título y el contenido
+        # .ilike() es insensible a mayúsculas/minúsculas, útil para PostgreSQL
+        search_results = Post.query.filter(or_(
+            Post.title.ilike(f'%{query}%'),
+            Post.content.ilike(f'%{query}%')
+        )).order_by(Post.date_posted.desc()).paginate(page=page, per_page=POSTS_PER_PAGE, error_out=False)
+    else:
+        search_results = None # No hay resultados si no hay consulta
+
+    categories = Category.query.order_by(Category.name).all() # Para el navbar
+    return render_template('search_results.html', 
+                           query=query, 
+                           posts=search_results, 
+                           categories=categories)
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -396,7 +416,6 @@ def delete_post(post_id):
         return redirect(url_for('post_detail', post_id=post.id))
 
 if __name__ == '__main__':
-    # Asegurarse de que la carpeta de uploads exista
     uploads_path = os.path.join(app.root_path, 'static', 'uploads')
     if not os.path.exists(uploads_path):
         try:
@@ -406,7 +425,6 @@ if __name__ == '__main__':
             print(f"ERROR: No se pudo crear la carpeta de subidas '{uploads_path}'. Error: {e}")
 
     with app.app_context():
-        # db.drop_all() # Descomentar para borrar todas las tablas y empezar de cero
         db.create_all()
         
         if not Category.query.first():
