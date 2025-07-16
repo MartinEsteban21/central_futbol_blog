@@ -1,16 +1,26 @@
+import os # Importar el módulo os para acceder a variables de entorno
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-import secrets
-import os # Importar el módulo os para manejar archivos
+import secrets # Todavía necesario para generar nombres de archivo únicos
 from werkzeug.utils import secure_filename # Para nombres de archivo seguros
 
 app = Flask(__name__)
 
-# Genera una clave secreta fuerte. ¡Es importante que sea única y segura!
-app.config['SECRET_KEY'] = secrets.token_hex(16)
+# Configuración de la clave secreta desde variables de entorno
+# Esto es CRÍTICO para producción en Render.
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+if not app.config['SECRET_KEY']:
+    # Si la variable de entorno no está configurada (ej. en desarrollo local sin dotenv)
+    # puedes tener una clave de respaldo para desarrollo, pero NUNCA para producción.
+    # Para producción, Render DEBE proveerla.
+    # raise ValueError("No SECRET_KEY set for Flask application. Please set the 'SECRET_KEY' environment variable.")
+    # Para facilitar el desarrollo local si no usas dotenv, puedes descomentar la línea de abajo,
+    # pero recuerda que es INSEGURO para producción.
+    # print("ADVERTENCIA: SECRET_KEY no establecida en entorno. Usando clave por defecto (solo para desarrollo).")
+    app.config['SECRET_KEY'] = 'una_clave_secreta_muy_insegura_para_desarrollo' # CAMBIA ESTO EN PRODUCCIÓN
 
 # Configuración de la base de datos
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
