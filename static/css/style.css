@@ -273,6 +273,34 @@ body {
     font-size: 0.9rem;
 }
 
+/* Estilos de Paginación */
+.pagination .page-item .page-link {
+    border-radius: 0.5rem;
+    margin: 0 0.25rem;
+    color: #007bff;
+    border-color: #dee2e6;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.pagination .page-item .page-link:hover {
+    background-color: #e9ecef;
+    color: #0056b3;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
+
 /* Estilos responsivos */
 @media (max-width: 768px) {
     .jumbotron {

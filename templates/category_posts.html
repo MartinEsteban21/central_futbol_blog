@@ -4,15 +4,15 @@
 
 {% block content %}
 <div class="jumbotron text-center bg-light p-5 rounded mb-4">
-    <h1 class="display-4 text-white">Publicaciones de: {{ category.name }}</h1> {# Cambiado a blanco #}
-    <p class="lead text-white">Explora todos los artículos relacionados con {{ category.name }}.</p> {# Cambiado a blanco #}
+    <h1 class="display-4 text-white">Publicaciones de: {{ category.name }}</h1>
+    <p class="lead text-white">Explora todos los artículos relacionados con {{ category.name }}.</p>
 </div>
 
 <div class="row">
     <div class="col-md-10 offset-md-1">
-        {% for post in posts %}
+        {% for post in posts.items %} {# Iterar sobre los elementos de la página actual #}
         <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-primary text-white"> {# Cambiado a bg-primary #}
+            <div class="card-header bg-primary text-white">
                 <h2 class="card-title mb-0"><a href="{{ url_for('post_detail', post_id=post.id) }}" class="text-white text-decoration-none">{{ post.title }}</a></h2>
             </div>
             <div class="card-body">
@@ -32,6 +32,36 @@
             ¡No hay publicaciones en esta categoría todavía!
         </div>
         {% endfor %}
+
+        {# Controles de Paginación #}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {# Botón para la página anterior #}
+                <li class="page-item {% if not posts.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('category_posts', category_id=category.id, page=posts.prev_num) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {# Números de página #}
+                {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if posts.page == page_num %}
+                            <li class="page-item active" aria-current="page"><a class="page-link" href="{{ url_for('category_posts', category_id=category.id, page=page_num) }}">{{ page_num }}</a></li>
+                        {% else %}
+                            <li class="page-item"><a class="page-link" href="{{ url_for('category_posts', category_id=category.id, page=page_num) }}">{{ page_num }}</a></li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                    {% endif %}
+                {% endfor %}
+                {# Botón para la página siguiente #}
+                <li class="page-item {% if not posts.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('category_posts', category_id=category.id, page=posts.next_num) }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
     </div>
 </div>
 {% endblock content %}

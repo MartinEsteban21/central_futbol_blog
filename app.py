@@ -1,30 +1,25 @@
-import os # Importar el módulo os para acceder a variables de entorno
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-import secrets # Todavía necesario para generar nombres de archivo únicos
-from werkzeug.utils import secure_filename # Para nombres de archivo seguros
+import secrets
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
 # Configuración de la clave secreta desde variables de entorno
-# Esto es CRÍTICO para producción en Render.
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 if not app.config['SECRET_KEY']:
-    # Si la variable de entorno no está configurada (ej. en desarrollo local sin dotenv)
-    # puedes tener una clave de respaldo para desarrollo, pero NUNCA para producción.
-    # Para producción, Render DEBE proveerla.
-    # raise ValueError("No SECRET_KEY set for Flask application. Please set the 'SECRET_KEY' environment variable.")
-    # Para facilitar el desarrollo local si no usas dotenv, puedes descomentar la línea de abajo,
-    # pero recuerda que es INSEGURO para producción.
-    # print("ADVERTENCIA: SECRET_KEY no establecida en entorno. Usando clave por defecto (solo para desarrollo).")
-    app.config['SECRET_KEY'] = 'una_clave_secreta_muy_insegura_para_desarrollo' # CAMBIA ESTO EN PRODUCCIÓN
+    app.config['SECRET_KEY'] = 'una_clave_secreta_muy_insegura_para_desarrollo' # Solo para desarrollo local
 
-# Configuración de la base de datos
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
+# Configuración de la base de datos (PostgreSQL en Render, SQLite localmente)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or 'sqlite:///blog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Número de publicaciones por página para la paginación
+POSTS_PER_PAGE = 5 
 
 # Carpeta para subir imágenes
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
@@ -41,14 +36,12 @@ def allowed_file(filename):
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login' # La ruta a la que redirigir si un usuario no está logueado
+login_manager.login_view = 'login'
 
-# Contexto de plantilla global para el año actual en el footer
 @app.context_processor
 def inject_now():
     return {'now': datetime.utcnow()}
 
-# FILTRO PERSONALIZADO PARA TRUNCAR TEXTO
 @app.template_filter('truncate')
 def truncate_filter(s, length=200, killwords=True, end='...'):
     if len(s) <= length:
@@ -57,7 +50,6 @@ def truncate_filter(s, length=200, killwords=True, end='...'):
         return s[:length].rsplit(' ', 1)[0] + end
     return s[:length] + end
 
-# MODELO DE USUARIO
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
@@ -75,12 +67,10 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f"User('{self.username}')"
 
-# FUNCIÓN user_loader PARA FLASK-LOGIN
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# MODELO DE CATEGORÍA
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
@@ -89,7 +79,6 @@ class Category(db.Model):
     def __repr__(self):
         return f"Category('{self.name}')"
 
-# MODELO DE POST
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
@@ -102,11 +91,9 @@ class Post(db.Model):
     image_file = db.Column(db.String(120), nullable=True)
     comments = db.relationship('Comment', backref='post', lazy=True, order_by='Comment.date_posted.asc()')
 
-
     def __repr__(self):
         return f"Post('{self.title}', '{self.date_posted}')"
 
-# MODELO DE COMENTARIO
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
@@ -117,24 +104,27 @@ class Comment(db.Model):
     def __repr__(self):
         return f"Comment('{self.content[:20]}...', by User ID: {self.user_id}, on Post ID: {self.post_id}')"
 
-
 # RUTAS DE LA APLICACIÓN
 
 @app.route('/')
 def index():
-    # Ya no se cargan posts aquí, solo las categorías para el menú
+    # Obtener el número de página de la URL (por defecto es 1)
+    page = request.args.get('page', 1, type=int)
+    # Realizar la consulta con paginación
+    posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=POSTS_PER_PAGE, error_out=False)
     categories = Category.query.order_by(Category.name).all()
-    return render_template('index.html', categories=categories)
+    return render_template('index.html', posts=posts, categories=categories)
 
 @app.route('/category/<int:category_id>')
 def category_posts(category_id):
     category = Category.query.get_or_404(category_id)
-    posts = Post.query.filter_by(category=category).order_by(Post.date_posted.desc()).all()
+    # Obtener el número de página de la URL (por defecto es 1)
+    page = request.args.get('page', 1, type=int)
+    # Realizar la consulta con paginación para la categoría específica
+    posts = Post.query.filter_by(category=category).order_by(Post.date_posted.desc()).paginate(page=page, per_page=POSTS_PER_PAGE, error_out=False)
     categories = Category.query.order_by(Category.name).all()
     return render_template('category_posts.html', category=category, posts=posts, categories=categories)
 
-
-# RUTA DE REGISTRO
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -143,8 +133,7 @@ def register():
         username = request.form['username']
         password = request.form['password']
         
-        # Manejo de la imagen de perfil
-        profile_image_filename = 'default_profile.png' # Valor por defecto
+        profile_image_filename = 'default_profile.png'
         if 'profile_image' in request.files:
             file = request.files['profile_image']
             if file and allowed_file(file.filename):
@@ -155,7 +144,6 @@ def register():
             elif file.filename != '':
                 flash('Tipo de archivo de imagen no permitido. Solo PNG, JPG, JPEG, GIF.', 'danger')
                 return render_template('register.html')
-
 
         user = User.query.filter_by(username=username).first()
         if user:
@@ -169,7 +157,6 @@ def register():
             return redirect(url_for('login'))
     return render_template('register.html')
 
-# RUTA DE LOGIN
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -188,7 +175,6 @@ def login():
             flash('Login fallido. Por favor, revisa tu nombre de usuario y contraseña.', 'danger')
     return render_template('login.html')
 
-# RUTA DE LOGOUT
 @app.route('/logout')
 @login_required
 def logout():
@@ -196,21 +182,18 @@ def logout():
     flash('Has cerrado sesión.', 'info')
     return redirect(url_for('index'))
 
-# RUTA PARA VER PERFIL DE USUARIO
 @app.route('/user/<string:username>')
 def user_profile(username):
     user = User.query.filter_by(username=username).first_or_404()
     user_posts = Post.query.filter_by(user=user).order_by(Post.date_posted.desc()).all()
     return render_template('user_profile.html', user=user, posts=user_posts)
 
-# RUTA PARA EDITAR PERFIL DE USUARIO
 @app.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
     if request.method == 'POST':
         current_user.bio = request.form['bio']
         
-        # Manejo de la imagen de perfil
         if 'profile_image' in request.files:
             file = request.files['profile_image']
             if file.filename == '':
@@ -238,8 +221,6 @@ def edit_profile():
             flash('Hubo un error al actualizar el perfil.', 'danger')
     return render_template('edit_profile.html', user=current_user)
 
-
-# RUTA PARA CREAR NUEVOS POSTS
 @app.route('/create', methods=['GET', 'POST'])
 @login_required
 def create_post():
@@ -250,7 +231,6 @@ def create_post():
         post_author = request.form.get('author', current_user.username)
         category_id = request.form.get('category_id')
 
-        # Manejo de la imagen del post
         post_image_filename = None
         if 'image_file' in request.files:
             file = request.files['image_file']
@@ -279,7 +259,6 @@ def create_post():
             return redirect(url_for('create_post'))
     return render_template('create_post.html', categories=categories)
 
-# RUTA PARA LA PÁGINA DE DETALLE DE UN POST INDIVIDUAL
 @app.route('/post/<int:post_id>', methods=['GET', 'POST'])
 def post_detail(post_id):
     post = Post.query.get_or_404(post_id)
@@ -287,7 +266,6 @@ def post_detail(post_id):
     if current_user.is_authenticated and post.user_id == current_user.id:
         can_edit_delete = True
 
-    # Lógica para añadir un comentario
     if request.method == 'POST' and current_user.is_authenticated:
         comment_content = request.form['comment_content']
         if comment_content:
@@ -305,7 +283,6 @@ def post_detail(post_id):
     
     return render_template('post_detail.html', post=post, can_edit_delete=can_edit_delete)
 
-# RUTA PARA ELIMINAR UN COMENTARIO
 @app.route('/comment/<int:comment_id>/delete', methods=['POST'])
 @login_required
 def delete_comment(comment_id):
@@ -329,8 +306,6 @@ def delete_comment(comment_id):
         flash('Hubo un error al eliminar el comentario.', 'danger')
         return redirect(url_for('post_detail', post_id=post_id))
 
-
-# RUTA PARA EDITAR UN POST EXISTENTE
 @app.route('/post/<int:post_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_post(post_id):
@@ -355,7 +330,6 @@ def edit_post(post_id):
         else:
             post.category_id = None
 
-        # Manejo de la imagen del post
         if 'image_file' in request.files:
             file = request.files['image_file']
             if file.filename == '':
@@ -380,7 +354,6 @@ def edit_post(post_id):
                     os.remove(old_image_path)
                 post.image_file = None
 
-
         try:
             db.session.commit()
             flash('¡Publicación actualizada con éxito!', 'success')
@@ -392,8 +365,6 @@ def edit_post(post_id):
     else:
         return render_template('edit_post.html', post=post, categories=categories)
 
-
-# RUTA PARA ELIMINAR UN POST
 @app.route('/post/<int:post_id>/delete', methods=['POST'])
 @login_required
 def delete_post(post_id):
@@ -407,11 +378,9 @@ def delete_post(post_id):
         return redirect(url_for('post_detail', post_id=post.id))
 
     try:
-        # Eliminar comentarios asociados al post antes de eliminar el post
         for comment in post.comments:
             db.session.delete(comment)
         
-        # Eliminar la imagen del post si existe
         if post.image_file:
             image_path = os.path.join(app.config['UPLOAD_FOLDER'], post.image_file)
             if os.path.exists(image_path):
@@ -435,5 +404,18 @@ if __name__ == '__main__':
             print(f"Carpeta de subidas creada: {uploads_path}")
         except Exception as e:
             print(f"ERROR: No se pudo crear la carpeta de subidas '{uploads_path}'. Error: {e}")
+
+    with app.app_context():
+        # db.drop_all() # Descomentar para borrar todas las tablas y empezar de cero
+        db.create_all()
+        
+        if not Category.query.first():
+            print("Añadiendo categorías de fútbol por defecto...")
+            default_categories = ['Noticias', 'Análisis de Partidos', 'Jugadores', 'Tácticas', 'Mercado de Fichajes', 'Resultados']
+            for cat_name in default_categories:
+                if not Category.query.filter_by(name=cat_name).first():
+                    db.session.add(Category(name=cat_name))
+            db.session.commit()
+            print("Categorías añadidas.")
 
     app.run(debug=True)
