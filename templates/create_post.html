@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Nueva Publicación{% endblock title %}
+
+{% block content %}
+<div class="container form-container">
+    <h1 class="mb-4 text-center text-primary">Crear Nueva Publicación</h1>
+    <form method="POST" enctype="multipart/form-data"> {# IMPORTANTE: enctype para subida de archivos #}
+        <div class="mb-3">
+            <label for="title" class="form-label">Título:</label>
+            <input type="text" id="title" name="title" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="content" class="form-label">Contenido:</label>
+            <textarea id="content" name="content" class="form-control" rows="8" required></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="category_id" class="form-label">Categoría de Fútbol:</label>
+            <select id="category_id" name="category_id" class="form-select">
+                <option value="">-- Selecciona una categoría --</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="image_file" class="form-label">Imagen del Post (opcional):</label>
+            <input type="file" id="image_file" name="image_file" class="form-control" accept=".png, .jpg, .jpeg, .gif">
+            <small class="form-text text-muted">Formatos permitidos: PNG, JPG, JPEG, GIF.</small>
+        </div>
+        <div class="mb-3">
+            <label for="author" class="form-label">Autor (opcional):</label>
+            <input type="text" id="author" name="author" class="form-control">
+        </div>
+        <div class="form-actions d-flex justify-content-between align-items-center">
+            <a href="/" class="btn btn-secondary">← Volver al Blog</a>
+            <button type="submit" class="btn btn-primary">Publicar</button>
+        </div>
+    </form>
+</div>
+{% endblock content %}
+

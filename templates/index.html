@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio - Central Fútbol{% endblock title %}
+
+{% block content %}
+<div class="jumbotron text-center bg-light p-5 rounded mb-4">
+    <h1 class="display-5 text-white">¡Bienvenido a Central Fútbol!</h1> {# Título más pequeño #}
+    <p class="lead text-white">Tu fuente principal para las últimas noticias, análisis profundos y todo lo relacionado con el apasionante mundo del fútbol.</p>
+    <p class="text-white-50">Explora nuestras categorías para sumergirte en el juego.</p>
+</div>
+
+<div class="row">
+    <div class="col-md-10 offset-md-1">
+        {# Sección de Descripción del Blog #}
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body text-center">
+                <h2 class="card-title text-primary mb-3">Sobre Central Fútbol</h2>
+                <p class="card-text">
+                    En Central Fútbol, vivimos y respiramos el fútbol. Desde los emocionantes partidos de la liga local hasta los torneos internacionales más prestigiosos, te traemos la información más relevante y el análisis más agudo. Nuestro equipo de expertos y apasionados por el deporte rey trabaja incansablemente para ofrecerte contenido de calidad, entrevistas exclusivas, perfiles de jugadores, tácticas y mucho más. Únete a nuestra comunidad y comparte tu pasión por el fútbol.
+                </p>
+            </div>
+        </div>
+
+        {# Sección de Partidos Destacados de la Semana #}
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-success text-white"> {# Nuevo color para esta sección #}
+                <h2 class="card-title mb-0">Partidos Destacados de la Semana</h2>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="text-start">
+                            <h5 class="mb-1">Real Madrid vs. FC Barcelona</h5>
+                            <small class="text-muted">La Liga - Sábado, 20 de Julio | 15:00 GMT</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">Clásico</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="text-start">
+                            <h5 class="mb-1">Manchester City vs. Liverpool</h5>
+                            <small class="text-muted">Premier League - Domingo, 21 de Julio | 17:30 GMT</small>
+                        </div>
+                        <span class="badge bg-info rounded-pill">Imperdible</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="text-start">
+                            <h5 class="mb-1">Boca Juniors vs. River Plate</h5>
+                            <small class="text-muted">Liga Profesional Argentina - Sábado, 20 de Julio | 20:00 GMT</small>
+                        </div>
+                        <span class="badge bg-danger rounded-pill">Derbi</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="text-start">
+                            <h5 class="mb-1">Bayern Múnich vs. Borussia Dortmund</h5>
+                            <small class="text-muted">Bundesliga - Viernes, 19 de Julio | 19:30 GMT</small>
+                        </div>
+                        <span class="badge bg-warning text-dark rounded-pill">Top</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        {# Las publicaciones ya NO se muestran aquí, solo en las categorías #}
+        <div class="alert alert-info text-center" role="alert">
+            Explora nuestras <a href="{{ url_for('index') }}" class="alert-link">categorías de fútbol</a> para ver todas las publicaciones.
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Publicación: {{ post.title }}{% endblock title %}
+
+{% block content %}
+<div class="container form-container">
+    <h1 class="mb-4 text-center text-primary">Editar Publicación</h1>
+    <form method="POST" enctype="multipart/form-data"> {# IMPORTANTE: enctype para subida de archivos #}
+        <div class="mb-3">
+            <label for="title" class="form-label">Título:</label>
+            <input type="text" id="title" name="title" value="{{ post.title }}" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="content" class="form-label">Contenido:</label>
+            <textarea id="content" name="content" class="form-control" rows="8" required>{{ post.content }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="category_id" class="form-label">Categoría de Fútbol:</label>
+            <select id="category_id" name="category_id" class="form-select">
+                <option value="">-- Sin categoría --</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}" {% if post.category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Imagen del Post Actual:</label><br>
+            {% if post.image_file %}
+                <img src="{{ url_for('static', filename='uploads/' + post.image_file) }}" class="img-fluid rounded mb-2" alt="Imagen del post actual">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="clear_image" name="clear_image">
+                    <label class="form-check-label" for="clear_image">Eliminar imagen actual</label>
+                </div>
+            {% else %}
+                <p class="text-muted">No hay imagen actual para este post.</p>
+            {% endif %}
+            <label for="image_file" class="form-label mt-2">Subir Nueva Imagen del Post (reemplazará la actual):</label>
+            <input type="file" id="image_file" name="image_file" class="form-control" accept=".png, .jpg, .jpeg, .gif">
+            <small class="form-text text-muted">Formatos permitidos: PNG, JPG, JPEG, GIF.</small>
+        </div>
+        <div class="mb-3">
+            <label for="author" class="form-label">Autor (opcional):</label>
+            <input type="text" id="author" name="author" value="{{ post.author }}" class="form-control">
+        </div>
+        <div class="form-actions d-flex justify-content-between align-items-center">
+            <a href="{{ url_for('post_detail', post_id=post.id) }}" class="btn btn-secondary">← Volver al Post</a>
+            <button type="submit" class="btn btn-primary">Actualizar</button>
+        </div>
+    </form>
+</div>
+{% endblock content %}

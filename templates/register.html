@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Registrarse - Mi Blog{% endblock title %}
+
+{% block content %}
+<div class="container form-container">
+    <h1 class="mb-4 text-center text-primary">Registrarse</h1>
+    <form method="POST" enctype="multipart/form-data"> {# IMPORTANTE: enctype para subida de archivos #}
+        <div class="mb-3">
+            <label for="username" class="form-label">Nombre de Usuario:</label>
+            <input type="text" id="username" name="username" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Contraseña:</label>
+            <input type="password" id="password" name="password" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="profile_image" class="form-label">Imagen de Perfil (opcional):</label>
+            <input type="file" id="profile_image" name="profile_image" class="form-control" accept=".png, .jpg, .jpeg, .gif">
+            <small class="form-text text-muted">Formatos permitidos: PNG, JPG, JPEG, GIF.</small>
+        </div>
+        <div class="form-actions d-flex justify-content-between align-items-center">
+            <button type="submit" class="btn btn-primary">Registrar</button>
+            <small class="text-muted">¿Ya tienes una cuenta? <a href="{{ url_for('login') }}">Inicia Sesión</a></small>
+        </div>
+    </form>
+</div>
+{% endblock content %}

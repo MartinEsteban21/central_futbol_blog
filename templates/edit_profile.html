@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Perfil{% endblock title %}
+
+{% block content %}
+<div class="container form-container">
+    <h1 class="mb-4 text-center text-primary">Editar Perfil</h1>
+    <form method="POST" enctype="multipart/form-data"> {# IMPORTANTE: enctype para subida de archivos #}
+        <div class="mb-3 text-center">
+            <label class="form-label">Imagen de Perfil Actual:</label><br>
+            <img src="{{ url_for('static', filename='uploads/' + user.profile_image) }}" alt="Imagen de perfil actual" class="rounded-circle mb-3 profile-image-large"> {# Se eliminó style="width: 100px; height: 100px;" #}
+        </div>
+        <div class="mb-3">
+            <label for="profile_image" class="form-label">Subir Nueva Imagen de Perfil:</label>
+            <input type="file" id="profile_image" name="profile_image" class="form-control" accept=".png, .jpg, .jpeg, .gif">
+            <small class="form-text text-muted">Formatos permitidos: PNG, JPG, JPEG, GIF.</small>
+        </div>
+        <div class="mb-3">
+            <label for="bio" class="form-label">Biografía:</label>
+            <textarea id="bio" name="bio" class="form-control" rows="5">{{ user.bio }}</textarea>
+        </div>
+        <div class="form-actions d-flex justify-content-between align-items-center">
+            <a href="{{ url_for('user_profile', username=user.username) }}" class="btn btn-secondary">← Volver al Perfil</a>
+            <button type="submit" class="btn btn-primary">Actualizar Perfil</button>
+        </div>
+    </form>
+</div>
+{% endblock content %}
